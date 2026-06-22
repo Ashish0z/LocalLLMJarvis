@@ -1,11 +1,8 @@
 package com.localllmjarvis.app
 
 import android.Manifest
-import android.app.Activity
-import android.content.Intent
-import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -45,9 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,13 +60,22 @@ fun LocalJarvisApp() {
     val scope = rememberCoroutineScope()
 
     var apiBaseUrl by remember { mutableStateOf(preferences.apiBaseUrl) }
+    var apiKey by remember { mutableStateOf(preferences.apiKey) }
     var today by remember { mutableStateOf<TodayState?>(null) }
     var captureText by remember { mutableStateOf("") }
     var assistantResponse by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
 
-    fun api() = ApiClient(apiBaseUrl)
+    fun api() = ApiClient(apiBaseUrl, apiKey)
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (!granted) {
+            errorMessage = "Notifications are disabled, so reminder alerts may not appear."
+        }
+    }
 
     fun refreshToday() {
         scope.launch {
@@ -106,42 +110,15 @@ fun LocalJarvisApp() {
         }
     }
 
-    val speechLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val matches = result.data
-                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                .orEmpty()
-            captureText = matches.firstOrNull().orEmpty()
-        }
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            speechLauncher.launch(speechIntent())
-        } else {
-            errorMessage = "Microphone permission is needed for voice capture."
-        }
-    }
-
-    fun startVoiceCapture() {
-        val granted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.RECORD_AUDIO
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (granted) {
-            speechLauncher.launch(speechIntent())
-        } else {
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        }
-    }
-
     LaunchedEffect(Unit) {
         refreshToday()
+    }
+
+    LaunchedEffect(apiBaseUrl, apiKey) {
+        ReminderWorker.schedule(context, apiBaseUrl, apiKey)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     MaterialTheme(
@@ -175,7 +152,6 @@ fun LocalJarvisApp() {
                         assistantResponse = assistantResponse,
                         loading = loading,
                         onTextChanged = { captureText = it },
-                        onVoice = ::startVoiceCapture,
                         onSend = ::sendCapture
                     )
                 }
@@ -218,22 +194,19 @@ fun LocalJarvisApp() {
                 item {
                     SettingsCard(
                         apiBaseUrl = apiBaseUrl,
+                        apiKey = apiKey,
                         onApiBaseUrlChanged = {
                             apiBaseUrl = it
                             preferences.apiBaseUrl = it
+                        },
+                        onApiKeyChanged = {
+                            apiKey = it
+                            preferences.apiKey = it
                         }
                     )
                 }
             }
         }
-    }
-}
-
-private fun speechIntent(): Intent {
-    return Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        putExtra(RecognizerIntent.EXTRA_PROMPT, "Tell Jarvis what to remember or do")
     }
 }
 
@@ -279,7 +252,6 @@ private fun CaptureCard(
     assistantResponse: String,
     loading: Boolean,
     onTextChanged: (String) -> Unit,
-    onVoice: () -> Unit,
     onSend: () -> Unit
 ) {
     Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
@@ -293,9 +265,6 @@ private fun CaptureCard(
                 placeholder = { Text("Add a task, set a reminder, or log water and meals") }
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(onClick = onVoice, enabled = !loading) {
-                    Text("Voice")
-                }
                 Button(onClick = onSend, enabled = !loading && captureText.isNotBlank()) {
                     Text("Send")
                 }
@@ -362,8 +331,14 @@ private fun ReminderRow(reminder: ReminderItem) {
 }
 
 @Composable
-private fun SettingsCard(apiBaseUrl: String, onApiBaseUrlChanged: (String) -> Unit) {
+private fun SettingsCard(
+    apiBaseUrl: String,
+    apiKey: String,
+    onApiBaseUrlChanged: (String) -> Unit,
+    onApiKeyChanged: (String) -> Unit
+) {
     var draft by remember(apiBaseUrl) { mutableStateOf(apiBaseUrl) }
+    var apiKeyDraft by remember(apiKey) { mutableStateOf(apiKey) }
     Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Settings", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
@@ -374,8 +349,20 @@ private fun SettingsCard(apiBaseUrl: String, onApiBaseUrlChanged: (String) -> Un
                 label = { Text("Assistant API URL") },
                 singleLine = true
             )
-            Button(onClick = { onApiBaseUrlChanged(draft) }) {
-                Text("Save API URL")
+            OutlinedTextField(
+                value = apiKeyDraft,
+                onValueChange = { apiKeyDraft = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("API key") },
+                singleLine = true
+            )
+            Button(
+                onClick = {
+                    onApiBaseUrlChanged(draft)
+                    onApiKeyChanged(apiKeyDraft)
+                }
+            ) {
+                Text("Save settings")
             }
         }
     }
@@ -385,4 +372,3 @@ private fun SettingsCard(apiBaseUrl: String, onApiBaseUrlChanged: (String) -> Un
 private fun EmptyText(text: String) {
     Text(text = text, color = Color(0xFF637166), modifier = Modifier.padding(vertical = 4.dp))
 }
-

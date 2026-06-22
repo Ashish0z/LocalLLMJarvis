@@ -8,6 +8,9 @@ The current slice focuses on the core loop:
 - Extract tasks, reminders, water logs, and nutrition logs.
 - Prioritize tasks.
 - Expose a Today view for Android and web clients.
+- Upload and ask questions about text-based documents.
+- Protect private endpoints with an API key.
+- Notify Android users about due reminders.
 - Keep Ollama optional for conversational fallback while deterministic tools mature.
 
 ## Apps
@@ -69,9 +72,23 @@ Current Android MVP features:
 
 - Today screen.
 - Text capture.
-- Voice capture using Android speech recognition.
 - Task completion.
+- Reminder notifications.
 - API URL settings.
+- API key settings.
+
+## Current Publishable MVP Status
+
+The app is now text-first. For voice dictation, use the Android keyboard's built-in microphone input, such as Google Keyboard voice typing.
+
+Implemented publishable foundations:
+
+- Dockerized backend, web, Postgres, and Ollama.
+- API-key authentication with `X-API-Key`.
+- Android text capture and Today workflow.
+- Android due-reminder notifications through WorkManager.
+- Web document upload and document Q&A.
+- Backend tests for auth, assistant capture, Today, and documents.
 
 ## MVP Services
 
@@ -86,14 +103,15 @@ Create an assistant action:
 
 ```powershell
 Invoke-RestMethod -Method Post http://localhost:8000/assistant/message `
+  -Headers @{"X-API-Key"="change-me-before-real-use"} `
   -ContentType "application/json" `
-  -Body '{"text":"Add a task to submit the insurance form tomorrow morning"}'
+  -Body '{"text":"Add a task to submit the insurance form tomorrow morning","source":"web"}'
 ```
 
 Get the Today view:
 
 ```powershell
-Invoke-RestMethod http://localhost:8000/today
+Invoke-RestMethod http://localhost:8000/today -Headers @{"X-API-Key"="change-me-before-real-use"}
 ```
 
 ## Design

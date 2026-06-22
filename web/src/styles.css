@@ -14,6 +14,7 @@ body {
 }
 
 button,
+input,
 textarea {
   font: inherit;
 }
@@ -88,6 +89,30 @@ h3 {
   gap: 20px;
 }
 
+.settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.settings label {
+  display: grid;
+  gap: 6px;
+  color: #4f6b59;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.settings input {
+  width: 100%;
+  border: 1px solid #cbd8ce;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #18211d;
+  background: #ffffff;
+}
+
 .panel {
   min-width: 0;
   padding: 20px;
@@ -126,9 +151,29 @@ button {
   cursor: pointer;
 }
 
+.link {
+  border: 0;
+  padding: 0;
+  color: #2f6b45;
+  background: transparent;
+  text-align: left;
+  font-weight: 700;
+}
+
+.link.selected {
+  text-decoration: underline;
+}
+
 button:disabled {
   cursor: wait;
   opacity: 0.7;
+}
+
+.error {
+  border-radius: 8px;
+  padding: 12px;
+  color: #7a2a1a;
+  background: #ffede8;
 }
 
 .response,
@@ -160,9 +205,49 @@ small {
   color: #6a756d;
 }
 
+.documents {
+  margin-top: 20px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.upload {
+  position: relative;
+  display: inline-grid;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: white;
+  background: #2f6b45;
+  cursor: pointer;
+}
+
+.upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.document-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 18px;
+}
+
+.muted {
+  color: #6a756d;
+}
+
 @media (max-width: 760px) {
   .hero,
-  .grid {
+  .grid,
+  .settings,
+  .document-grid {
     display: block;
   }
 
@@ -175,4 +260,3 @@ small {
     margin-top: 16px;
   }
 }
-

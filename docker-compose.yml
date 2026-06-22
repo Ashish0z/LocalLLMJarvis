@@ -8,6 +8,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://jarvis:jarvis@postgres:5432/jarvis}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      JARVIS_API_KEY: ${JARVIS_API_KEY:-change-me-before-real-use}
     ports:
       - "8000:8000"
     depends_on:
@@ -21,6 +22,7 @@ services:
       context: ./web
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+      VITE_API_KEY: ${JARVIS_API_KEY:-change-me-before-real-use}
     ports:
       - "5173:5173"
     depends_on:
@@ -47,4 +49,3 @@ services:
 volumes:
   postgres_data:
   ollama_data:
-

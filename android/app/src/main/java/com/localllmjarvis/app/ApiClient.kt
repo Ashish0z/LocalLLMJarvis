@@ -9,7 +9,7 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 
-class ApiClient(private val baseUrl: String) {
+class ApiClient(private val baseUrl: String, private val apiKey: String) {
     suspend fun getToday(): TodayState = withContext(Dispatchers.IO) {
         val body = request(path = "/today", method = "GET")
         parseToday(JSONObject(body))
@@ -18,7 +18,7 @@ class ApiClient(private val baseUrl: String) {
     suspend fun sendAssistantMessage(text: String): AssistantResult = withContext(Dispatchers.IO) {
         val payload = JSONObject()
             .put("text", text)
-            .put("source", "voice")
+            .put("source", "chat")
             .toString()
         val body = request(path = "/assistant/message", method = "POST", body = payload)
         val json = JSONObject(body)
@@ -37,6 +37,11 @@ class ApiClient(private val baseUrl: String) {
         Unit
     }
 
+    suspend fun listReminders(): List<ReminderItem> = withContext(Dispatchers.IO) {
+        val body = request(path = "/reminders", method = "GET")
+        JSONArray(body).toReminders()
+    }
+
     private fun request(path: String, method: String, body: String? = null): String {
         val normalizedBase = baseUrl.trimEnd('/')
         val connection = URL("$normalizedBase$path").openConnection() as HttpURLConnection
@@ -44,6 +49,9 @@ class ApiClient(private val baseUrl: String) {
         connection.connectTimeout = 8000
         connection.readTimeout = 15000
         connection.setRequestProperty("Accept", "application/json")
+        if (apiKey.isNotBlank()) {
+            connection.setRequestProperty("X-API-Key", apiKey)
+        }
 
         if (body != null) {
             connection.doOutput = true
@@ -123,4 +131,3 @@ private fun JSONObject.optNullableString(name: String): String? {
     if (isNull(name)) return null
     return optString(name).ifBlank { null }
 }
-

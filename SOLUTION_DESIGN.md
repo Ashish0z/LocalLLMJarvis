@@ -1,5 +1,25 @@
 # Local LLM Personal Assistant - Solution Design
 
+## 0. Implementation Update - Text-First Publishable MVP
+
+As of the current MVP implementation, the Android app is text-first. Dedicated in-app voice capture has been removed because users can rely on Google Keyboard voice input or any Android keyboard with dictation. Earlier voice-first sections in this document should now be read as fast-capture requirements rather than requirements for a custom speech pipeline.
+
+Current implementation direction:
+
+- Android primary interface uses text input, keyboard dictation, Today view, task completion, API settings, and reminder notifications.
+- Backend uses API-key authentication through the `X-API-Key` header when `JARVIS_API_KEY` is configured.
+- Web companion supports quick capture, Today view, document upload, document listing, and document Q&A.
+- Docker Compose runs FastAPI, Postgres, Ollama, and the web companion.
+- Postgres is the source of truth for tasks, reminders, health logs, memory, conversations, and documents.
+
+Features intentionally deferred from the publishable MVP:
+
+- Custom wake-word and speech-to-text service.
+- Custom text-to-speech.
+- Exact wake-up alarm optimization based on sleep cycles.
+- Google Calendar, Notion, Make, and Health Connect production integrations.
+- Vector embeddings and semantic document retrieval.
+
 ## 1. Vision
 
 Build a fully local, privacy-first personal assistant powered by Ollama-hosted LLMs. The assistant should feel less like a chatbot and more like a caring daily companion: it listens, remembers, plans, nudges, reminds, and adapts to the user's lifestyle over time.
@@ -874,4 +894,3 @@ The assistant is successful when:
 - The user trusts the assistant's memory because it is visible and editable.
 - Document workflows work comfortably from the web companion.
 - The full system runs privately over Docker and Tailscale.
-

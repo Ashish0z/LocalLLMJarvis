@@ -1,9 +1,11 @@
 from fastapi import FastAPI
+from fastapi import Depends
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.auth import require_api_key
 from app.config import get_settings
 from app.database import init_db
-from app.routers import assistant, logs, memory, reminders, tasks, today
+from app.routers import assistant, documents, logs, memory, reminders, tasks, today
 
 settings = get_settings()
 
@@ -32,10 +34,11 @@ def health() -> dict[str, str]:
     return {"status": "ok", "environment": settings.app_env}
 
 
-app.include_router(today.router)
-app.include_router(assistant.router)
-app.include_router(tasks.router)
-app.include_router(reminders.router)
-app.include_router(logs.router)
-app.include_router(memory.router)
-
+protected_dependencies = [Depends(require_api_key)]
+app.include_router(today.router, dependencies=protected_dependencies)
+app.include_router(assistant.router, dependencies=protected_dependencies)
+app.include_router(tasks.router, dependencies=protected_dependencies)
+app.include_router(reminders.router, dependencies=protected_dependencies)
+app.include_router(logs.router, dependencies=protected_dependencies)
+app.include_router(memory.router, dependencies=protected_dependencies)
+app.include_router(documents.router, dependencies=protected_dependencies)

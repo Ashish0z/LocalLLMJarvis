@@ -121,7 +121,7 @@ class MemoryRead(BaseModel):
 
 class AssistantMessageCreate(BaseModel):
     text: str = Field(min_length=1)
-    source: Literal["voice", "chat", "web"] = "chat"
+    source: Literal["chat", "web", "android"] = "chat"
 
 
 class AssistantActionRead(BaseModel):
@@ -142,3 +142,29 @@ class TodayRead(BaseModel):
     upcoming_reminders: list[ReminderRead]
     recent_logs: list[HealthLogRead]
     suggestion: str
+
+
+class DocumentRead(BaseModel):
+    id: str
+    filename: str
+    content_type: str | None
+    summary: str | None
+    source: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DocumentDetailRead(DocumentRead):
+    text: str
+
+
+class DocumentAskCreate(BaseModel):
+    question: str = Field(min_length=1)
+
+
+class DocumentAskRead(BaseModel):
+    answer: str
+    document_id: str
+    context_chunks: list[str]
