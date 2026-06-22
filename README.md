@@ -13,6 +13,39 @@ The current slice focuses on the core loop:
 - Notify Android users about due reminders.
 - Keep Ollama optional for conversational fallback while deterministic tools mature.
 
+## Product Direction: Beyond Calendar
+
+The current MVP proves the local-assistant foundation, but the intended product is broader than reminders and tasks.
+The next phase centers on five standout capabilities:
+
+1. Projects:
+   - User provides an objective and constraints.
+   - Assistant generates a phased plan, timeline, milestones, and actionable tasks.
+   - Assistant monitors progress and dynamically replans when slip risk appears.
+2. Goals:
+   - User defines long-term outcomes (for example fitness, learning, performance goals).
+   - Assistant asks baseline questions and builds a realistic program by timeframe.
+   - Assistant schedules reminders, check-ins, and progress reviews.
+3. Habits:
+   - User specifies habits to build or reduce.
+   - Assistant designs cue-routine-reward style loops, reminders, and accountability prompts.
+   - Assistant tracks streaks, misses, and trigger patterns.
+4. Automations:
+   - Memory-driven suggestions for new projects, habits, and goals.
+   - Trigger-based nudges (for example repeated misses -> lighter plan suggestion).
+   - Weekly auto-generated planning and reflection prompts.
+5. Tracking Dashboards:
+   - Daily/weekly dashboard for goals, habits, projects, and task completion.
+   - Trend visualizations and retrospective summaries.
+   - Assistant-generated next-step recommendations.
+
+Related differentiators planned with these:
+
+- Adaptive daily planning (energy/time-aware scheduling).
+- Accountability mode (gentle, standard, strict coaching styles).
+- Personal playbooks (repeatable routines for common project types).
+- Retrospective sessions with actionable course-correction suggestions.
+
 ## Apps
 
 - `android`: Kotlin + Jetpack Compose Android MVP client.
@@ -117,3 +150,9 @@ Invoke-RestMethod http://localhost:8000/today -Headers @{"X-API-Key"="change-me-
 ## Design
 
 See [SOLUTION_DESIGN.md](./SOLUTION_DESIGN.md) for the full product and technical design.
+
+## Roadmap Docs
+
+- Current capability inventory: [FEATURES_CURRENT.md](./FEATURES_CURRENT.md)
+- Usability and launch checklist: [TODO_BEFORE_USABLE.md](./TODO_BEFORE_USABLE.md)
+- Service-level assessment: [SLA_REVIEW.md](./SLA_REVIEW.md)

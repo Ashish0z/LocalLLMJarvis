@@ -164,6 +164,116 @@ The assistant uses health data to improve planning:
 - Remind the user to hydrate after exercise.
 - Ask for meal logs at regular intervals.
 
+### Projects (Execution Copilot)
+
+The assistant should support full project lifecycle management, not only standalone tasks.
+
+Expected flow:
+
+1. User starts project with objective, deadline, constraints, and success criteria.
+2. Assistant asks clarifying questions (scope, dependencies, available hours, risk tolerance).
+3. Assistant outputs:
+    - project brief
+    - milestone plan
+    - timeline
+    - task breakdown with priorities and sequencing
+4. Assistant schedules check-ins and adjusts plan from progress signals.
+
+Project UX requirements:
+
+- Project board with phases: planned, active, blocked, done.
+- Milestone-level status and confidence score.
+- "What changed" panel when timeline or tasks are replanned.
+- Fast conversion from project task to daily Today priorities.
+
+### Goals (Long-Horizon Coaching)
+
+Goals should be treated as structured programs over weeks or months.
+
+Expected flow:
+
+1. User defines long-term goal and timeframe.
+2. Assistant runs baseline interview:
+    - current level
+    - available time
+    - constraints/injuries/context
+    - motivation style
+3. Assistant proposes a goal plan with phases and checkpoints.
+4. Assistant schedules reminders/check-ins and adapts based on adherence.
+
+Example goals:
+
+- "Learn guitar basics in 90 days."
+- "Reduce body fat over 16 weeks."
+- "Run a sub-20 minute 5K."
+
+Goal UX requirements:
+
+- Baseline questionnaire wizard.
+- Phase timeline and weekly targets.
+- Evidence capture (session logged, workout done, practice minutes).
+- Automatic goal recalibration when user misses targets repeatedly.
+
+### Habits (Behavior Change System)
+
+Habit support should include both build and break modes.
+
+Expected flow:
+
+1. User defines desired habit or unwanted habit.
+2. Assistant asks context questions:
+    - trigger time/place
+    - emotional context
+    - minimum viable action
+3. Assistant generates intervention plan:
+    - reminders
+    - replacement behavior
+    - accountability check-ins
+4. Assistant tracks streaks, misses, and trigger patterns.
+
+Habit UX requirements:
+
+- Daily check-in with quick complete/skip/reason actions.
+- Trigger map and "high-risk window" reminders.
+- Streak chart and recovery protocol after misses.
+- Coaching tone selection (supportive, neutral, strict).
+
+### Automations (Memory-Driven Suggestions)
+
+Automations should proactively suggest useful next actions based on memory and behavior trends.
+
+Automation examples:
+
+- Suggest a "tax prep" project from repeated tax-related notes.
+- Suggest hydration habit from low water logs.
+- Suggest reduced daily plan after poor sleep streak.
+- Suggest weekly project review after repeated deadline slips.
+
+Automation constraints:
+
+- User-visible reason for each suggestion.
+- Accept, snooze, or dismiss controls.
+- Clear opt-in/out settings by automation category.
+
+### Tracking Dashboards and Retrospectives
+
+Dashboards should provide reflection and improvement, not only raw counts.
+
+Required dashboard views:
+
+- Daily scorecard:
+  - goals completed
+  - habits completed/missed
+  - tasks done
+- Weekly trend dashboard:
+  - completion rates
+  - consistency patterns
+  - project progress delta
+- Retrospective panel:
+  - what worked
+  - what slipped
+  - recommended changes for next cycle
+
 ## 7. UX Principles
 
 ### Android App
@@ -450,6 +560,14 @@ Responsibilities:
 - Trigger notifications.
 - Sync with Android.
 - Support calendar-aware scheduling.
+
+Extended responsibilities for standout features:
+
+- Project plan/task decomposition and dependency tracking.
+- Goal program scheduling and periodic reassessment.
+- Habit streak and relapse analytics.
+- Automation trigger evaluation for proactive suggestions.
+- Dashboard metrics aggregation for retrospective sessions.
 
 #### Document Service
 

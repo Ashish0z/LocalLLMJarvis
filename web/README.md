@@ -6,7 +6,7 @@ The web app is secondary to Android. It provides:
 
 - Quick capture.
 - Today view.
-- A basic browser surface for future document workflows.
+- Document upload and document Q&A workflows.
 
 ## Run with Docker
 
@@ -90,9 +90,20 @@ For a more locked-down deployment, keep browser use on the server machine or add
 
 Planned additions:
 
-- Document upload.
-- Document Q&A.
-- File task extraction.
-- Memory management.
-- Calendar and Notion integration settings.
+- Projects workspace:
+   - create projects from objective briefs
+   - visualize milestones and timelines
+   - track execution progress
+- Goals workspace:
+   - baseline capture forms
+   - progress timeline and checkpoint reviews
+- Habits workspace:
+   - habit plans, streak charts, and accountability logs
+- Automations center:
+   - suggestion inbox for project/goal/habit proposals
+   - accept/snooze/dismiss controls
+- Tracking dashboards:
+   - daily scorecards
+   - weekly trends and retrospective sessions
+- Expanded integrations and memory management surfaces.
 

@@ -57,9 +57,31 @@ Before testing on a physical phone:
 
 - Today screen from `/today`.
 - Text capture through `/assistant/message`.
-- Voice capture using Android speech recognition.
 - Task completion through `/tasks/{id}`.
 - Manual API URL configuration.
+
+Note: dedicated in-app voice capture is not currently implemented. Users can use keyboard dictation as input.
+
+## Planned Standout Android Features
+
+- Projects:
+   - project setup wizard (objective, constraints, deadline)
+   - milestone timeline view
+   - project check-in and replan prompts
+- Goals:
+   - baseline questionnaire flow
+   - phase-based progress timeline
+   - adaptive reminder schedules
+- Habits:
+   - build/remove habit setup
+   - streak and relapse tracking
+   - accountability check-in actions from notifications
+- Automations:
+   - memory-driven suggestion cards
+   - accept/snooze/dismiss quick actions
+- Tracking dashboards:
+   - daily scorecard
+   - weekly retrospective view with assistant recommendations
 
 ## Build a Debug APK
 

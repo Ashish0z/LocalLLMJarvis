@@ -8,6 +8,29 @@ The backend is normally run through Docker Compose from the repository root. It 
 - Ollama for local LLM fallback responses.
 - The web and Android clients through HTTP.
 
+## Product Expansion Areas (Planned)
+
+The backend roadmap expands from tasks/reminders into:
+
+- Projects API:
+  - create project objective
+  - generate milestones, timelines, and scoped task plans
+  - progress updates and replanning
+- Goals API:
+  - baseline questionnaire capture
+  - long-horizon plans and adaptive reminders
+  - checkpoint evaluation
+- Habits API:
+  - habit setup for build/remove modes
+  - streak and relapse tracking
+  - accountability workflows
+- Automations API:
+  - memory/event-triggered suggestion generation
+  - explainability metadata and user feedback loop
+- Dashboard API:
+  - daily and weekly aggregate metrics
+  - retrospective summaries and trend snapshots
+
 ## Files
 
 - `Dockerfile`: backend container image.

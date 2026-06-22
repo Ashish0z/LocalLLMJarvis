@@ -318,6 +318,14 @@ Recommended next work:
 - Add authentication for private clients.
 - Add Health Connect ingestion.
 - Add Calendar integration.
+
+Standout feature modules to implement after the baseline:
+
+- Projects engine (objective -> milestones -> timeline -> tasks).
+- Goals engine (baseline interview -> phased plan -> adaptive reminders).
+- Habits engine (build/remove plans -> streaks -> accountability).
+- Automation engine (memory-driven project/goal/habit suggestions).
+- Tracking dashboard service (daily/weekly metrics and retrospective summaries).
 - Add document upload and indexing.
 - Add release signing config documentation once a keystore strategy is chosen.
 
