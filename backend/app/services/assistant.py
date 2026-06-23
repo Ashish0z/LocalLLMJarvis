@@ -31,6 +31,14 @@ class AssistantService:
         if log:
             actions.append({"type": f"{log.kind}_logged", "id": log.id, "detail": log.value})
 
+        habit = self._maybe_create_habit(db, cleaned, source)
+        if habit:
+            actions.append({"type": "habit_created", "id": habit.id, "title": habit.title})
+
+        goal = self._maybe_create_goal(db, cleaned, source)
+        if goal:
+            actions.append({"type": "goal_created", "id": goal.id, "title": goal.title})
+
         if actions:
             response = self._confirmation(actions)
         else:
@@ -134,6 +142,59 @@ class AssistantService:
             amount *= 1000
         return amount
 
+    def _maybe_create_habit(self, db: Session, text: str, source: str) -> models.Habit | None:
+        lowered = text.lower()
+        habit_markers = ["habit to", "build a habit", "build the habit", "break the habit", "stop the habit", "track habit", "new habit"]
+        if not any(marker in lowered for marker in habit_markers):
+            return None
+
+        mode = "remove" if any(w in lowered for w in ["break", "stop", "quit", "remove"]) else "build"
+
+        title = re.sub(
+            r"^\s*(i want to\s+)?(build|break|stop|quit|remove|track)(\s+(a|the))?\s+habit(\s+(to|of|for))?\s*",
+            "",
+            text,
+            flags=re.IGNORECASE,
+        ).strip(" .")
+        if not title:
+            title = text.strip()
+
+        habit = models.Habit(
+            title=title,
+            mode=mode,
+            source=source,
+        )
+        db.add(habit)
+        db.flush()
+        return habit
+
+    def _maybe_create_goal(self, db: Session, text: str, source: str) -> models.Goal | None:
+        lowered = text.lower()
+        goal_markers = ["my goal is", "set a goal", "new goal", "want to achieve", "goal to", "goal:"]
+        if not any(marker in lowered for marker in goal_markers):
+            return None
+
+        title = re.sub(
+            r"^\s*(my\s+)?goal(\s+is)?(\s+to)?\s*[:\-]?\s*",
+            "",
+            text,
+            flags=re.IGNORECASE,
+        )
+        title = re.sub(r"^\s*(set\s+a\s+|new\s+)?goal\s*(to|for|:)?\s*", "", title, flags=re.IGNORECASE)
+        title = re.sub(r"^\s*(i\s+)?(want\s+to\s+achieve|want\s+to)\s*", "", title, flags=re.IGNORECASE)
+        title = title.strip(" .")
+        if not title:
+            title = text.strip()
+
+        goal = models.Goal(
+            title=title,
+            target_date=parse_when(text),
+            source=source,
+        )
+        db.add(goal)
+        db.flush()
+        return goal
+
     def _confirmation(self, actions: list[dict]) -> str:
         parts: list[str] = []
         for action in actions:
@@ -145,5 +206,9 @@ class AssistantService:
                 parts.append("logged water")
             elif action["type"] == "nutrition_logged":
                 parts.append("logged meal")
+            elif action["type"] == "habit_created":
+                parts.append(f"created habit: {action['title']}")
+            elif action["type"] == "goal_created":
+                parts.append(f"created goal: {action['title']}")
         return "Done - " + "; ".join(parts) + "."
 
