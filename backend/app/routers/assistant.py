@@ -13,7 +13,7 @@ assistant_service = AssistantService()
 @router.post("/message", response_model=schemas.AssistantMessageRead)
 @limiter.limit("30/minute")
 async def create_assistant_message(
-    request: Request,
+    request: Request,  # required by slowapi rate limiting
     payload: schemas.AssistantMessageCreate,
     db: Session = Depends(get_db),
 ) -> dict:

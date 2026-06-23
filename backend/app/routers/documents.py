@@ -75,7 +75,7 @@ def delete_document(document_id: str, db: Session = Depends(get_db)) -> None:
 @router.post("/{document_id}/ask", response_model=schemas.DocumentAskRead)
 @limiter.limit("20/minute")
 async def ask_document(
-    request: Request,
+    request: Request,  # required by slowapi rate limiting
     document_id: str,
     payload: schemas.DocumentAskCreate,
     db: Session = Depends(get_db),
