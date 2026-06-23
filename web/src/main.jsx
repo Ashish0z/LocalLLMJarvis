@@ -243,29 +243,23 @@ function App() {
         });
       } catch (err) {
         setError(err.message || "Could not delete document.");
-        if (doc) {
-          setDocuments((prev) => {
-            const next = [...prev];
-            const insertAt = Math.min(idx, next.length);
-            next.splice(insertAt, 0, doc);
-            return next;
-          });
-        }
+        if (doc) restoreDocumentAt(doc, idx);
       }
     }, UNDO_DELAY_MS);
   }
 
+  function restoreDocumentAt(doc, idx) {
+    setDocuments((prev) => {
+      const next = [...prev];
+      // Clamp the index in case other items were added/removed in the interim.
+      next.splice(Math.min(idx, next.length), 0, doc);
+      return next;
+    });
+  }
+
   function undoDeleteDocument() {
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    if (undoDoc?.doc) {
-      setDocuments((prev) => {
-        const next = [...prev];
-        // Restore to the original position; clamp in case other items were added/removed.
-        const insertAt = Math.min(undoDoc.idx, next.length);
-        next.splice(insertAt, 0, undoDoc.doc);
-        return next;
-      });
-    }
+    if (undoDoc?.doc) restoreDocumentAt(undoDoc.doc, undoDoc.idx);
     setUndoDoc(null);
   }
 
@@ -625,8 +619,7 @@ function App() {
                         className="link context-toggle"
                         onClick={() => setShowContext((v) => !v)}
                       >
-                        {showContext ? "Hide" : "Show"} retrieved context ({contextChunks.length}{" "}
-                        {contextChunks.length === 1 ? "snippet" : "snippets"})
+                        {showContext ? "Hide" : "Show"} retrieved context ({contextChunks.length} {contextChunks.length === 1 ? "snippet" : "snippets"})
                       </button>
                       {showContext && (
                         <ol className="context-list">

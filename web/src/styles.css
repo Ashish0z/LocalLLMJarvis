@@ -438,6 +438,7 @@ small {
     margin-top: 16px;
   }
 
+  /* Override the default 20px margin with a tighter 16px spacing on narrow screens. */
   .entity-section,
   .documents {
     margin-top: 16px;
