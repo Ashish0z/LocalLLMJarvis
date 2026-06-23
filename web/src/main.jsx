@@ -118,7 +118,7 @@ function App() {
   useEffect(() => {
     localStorage.setItem("jarvis_api_base_url", apiBaseUrl);
     localStorage.setItem("jarvis_api_key", apiKey);
-    loadAll();
+    void loadAll();
   }, [apiBaseUrl, apiKey]);
 
   async function sendMessage(event) {
@@ -243,7 +243,14 @@ function App() {
         });
       } catch (err) {
         setError(err.message || "Could not delete document.");
-        if (doc) setDocuments((prev) => [doc, ...prev]);
+        if (doc) {
+          setDocuments((prev) => {
+            const next = [...prev];
+            const insertAt = Math.min(idx, next.length);
+            next.splice(insertAt, 0, doc);
+            return next;
+          });
+        }
       }
     }, UNDO_DELAY_MS);
   }
