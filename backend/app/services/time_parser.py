@@ -1,16 +1,85 @@
 import re
 from datetime import datetime, time, timedelta, timezone
 
+# Map lowercase weekday names to Python weekday numbers (Monday=0)
+WEEKDAY_NAMES: dict[str, int] = {
+    "monday": 0,
+    "tuesday": 1,
+    "wednesday": 2,
+    "thursday": 3,
+    "friday": 4,
+    "saturday": 5,
+    "sunday": 6,
+}
+
+# Recurring time phrases that indicate a repeating schedule
+_RECURRING_PHRASES: frozenset[str] = frozenset({
+    "every day",
+    "everyday",
+    "daily",
+    "every morning",
+    "every evening",
+    "every night",
+    "every week",
+    "weekly",
+    "each day",
+    "each morning",
+    "each week",
+})
+
+_EVERY_WEEKDAY_RE = re.compile(
+    r"\bevery\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b"
+)
+
+# Clock pattern: require am/pm marker OR colon notation to avoid false matches
+# on bare ordinal/quantity numbers like "3 items" or "in 2 days".
+_CLOCK_RE = re.compile(
+    r"\b(\d{1,2}):(\d{2})\s*(am|pm)?\b"   # HH:MM [am/pm]
+    r"|"
+    r"\b(\d{1,2})\s*(am|pm)\b",            # H am/pm (am/pm required)
+    re.IGNORECASE,
+)
+
+
+def is_recurring(text: str) -> bool:
+    """Return True when *text* contains a phrase that denotes a recurring schedule."""
+    lowered = text.lower()
+    if any(phrase in lowered for phrase in _RECURRING_PHRASES):
+        return True
+    return bool(_EVERY_WEEKDAY_RE.search(lowered))
+
 
 def parse_when(text: str) -> datetime | None:
     lowered = text.lower()
     now = datetime.now(timezone.utc)
     target_date = now.date()
+    resolved_relative = False  # True when we've pinned a relative date
 
     if "tomorrow" in lowered:
         target_date = (now + timedelta(days=1)).date()
+        resolved_relative = True
     elif "next week" in lowered:
         target_date = (now + timedelta(days=7)).date()
+        resolved_relative = True
+    else:
+        # Weekday names: "on Monday", "next Thursday", plain "Friday", …
+        weekday_match = re.search(
+            r"\b(next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+            lowered,
+        )
+        if weekday_match:
+            force_next_week = bool(weekday_match.group(1))  # explicit "next …"
+            target_weekday = WEEKDAY_NAMES[weekday_match.group(2)]
+            current_weekday = now.weekday()
+            days_ahead = (target_weekday - current_weekday) % 7
+            if days_ahead == 0:
+                # Same weekday as today → always push to the next occurrence
+                days_ahead = 7
+            if force_next_week and days_ahead < 7:
+                # "next Monday" when Monday is 3 days away → week after that
+                days_ahead += 7
+            target_date = (now + timedelta(days=days_ahead)).date()
+            resolved_relative = True
 
     target_time = time(hour=9)
     if "morning" in lowered:
@@ -22,18 +91,26 @@ def parse_when(text: str) -> datetime | None:
     elif "tonight" in lowered or "night" in lowered:
         target_time = time(hour=20)
 
-    clock_match = re.search(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", lowered)
+    clock_match = _CLOCK_RE.search(lowered)
     if clock_match:
-        hour = int(clock_match.group(1))
-        minute = int(clock_match.group(2) or 0)
-        meridiem = clock_match.group(3)
-        if meridiem == "pm" and hour < 12:
+        if clock_match.group(1) is not None:
+            # HH:MM [am/pm]
+            hour = int(clock_match.group(1))
+            minute = int(clock_match.group(2))
+            meridiem = clock_match.group(3)
+        else:
+            # H am/pm
+            hour = int(clock_match.group(4))
+            minute = 0
+            meridiem = clock_match.group(5)
+        if meridiem and meridiem.lower() == "pm" and hour < 12:
             hour += 12
-        if meridiem == "am" and hour == 12:
+        if meridiem and meridiem.lower() == "am" and hour == 12:
             hour = 0
         if 0 <= hour <= 23 and 0 <= minute <= 59:
             target_time = time(hour=hour, minute=minute)
 
+    weekday_hint = any(name in lowered for name in WEEKDAY_NAMES)
     has_time_hint = any(
         phrase in lowered
         for phrase in [
@@ -47,13 +124,13 @@ def parse_when(text: str) -> datetime | None:
             "night",
             "after lunch",
         ]
-    ) or bool(clock_match)
+    ) or weekday_hint or bool(clock_match)
 
     if not has_time_hint:
         return None
 
     parsed = datetime.combine(target_date, target_time, tzinfo=timezone.utc)
-    if parsed < now and "tomorrow" not in lowered and "next week" not in lowered:
+    if parsed < now and not resolved_relative:
         parsed = parsed + timedelta(days=1)
     return parsed
 

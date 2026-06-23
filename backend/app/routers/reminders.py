@@ -14,6 +14,7 @@ def create_reminder(payload: schemas.ReminderCreate, db: Session = Depends(get_d
         title=payload.title,
         remind_at=payload.remind_at,
         intensity=payload.intensity,
+        recurrence=payload.recurrence,
         source=payload.source,
     )
     db.add(reminder)
