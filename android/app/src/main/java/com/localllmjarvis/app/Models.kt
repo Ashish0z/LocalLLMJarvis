@@ -13,6 +13,7 @@ data class ReminderItem(
     val id: String,
     val title: String,
     val remindAt: String?,
+    val status: String,
     val intensity: String
 )
 
@@ -37,4 +38,3 @@ data class AssistantResult(
     val response: String,
     val actionCount: Int
 )
-
