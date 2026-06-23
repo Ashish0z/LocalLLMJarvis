@@ -149,6 +149,7 @@ class DocumentRead(BaseModel):
     filename: str
     content_type: str | None
     summary: str | None
+    privacy_label: str
     source: str
     created_at: datetime
     updated_at: datetime
@@ -164,7 +165,15 @@ class DocumentAskCreate(BaseModel):
     question: str = Field(min_length=1)
 
 
+class ChunkCitation(BaseModel):
+    chunk_index: int
+    document_id: str
+    filename: str
+    text: str
+
+
 class DocumentAskRead(BaseModel):
     answer: str
     document_id: str
     context_chunks: list[str]
+    citations: list[ChunkCitation]
