@@ -1,11 +1,12 @@
 from functools import lru_cache
+from urllib.parse import urlparse
 
 from pydantic import AnyHttpUrl, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _INSECURE_KEY_VALUES: frozenset[str] = frozenset({"", "change-me-before-real-use"})
 
-_LOCAL_HOSTNAMES: tuple[str, ...] = ("localhost", "127.0.0.1", "0.0.0.0")
+_LOCAL_HOSTNAMES: frozenset[str] = frozenset({"localhost", "127.0.0.1", "0.0.0.0"})
 
 
 class Settings(BaseSettings):
@@ -42,7 +43,8 @@ class Settings(BaseSettings):
             )
 
         for origin in self.cors_origins:
-            if any(hostname in origin for hostname in _LOCAL_HOSTNAMES):
+            hostname = urlparse(origin).hostname or ""
+            if hostname in _LOCAL_HOSTNAMES:
                 raise ValueError(
                     f"CORS origin '{origin}' contains a local address. "
                     "Set API_CORS_ORIGINS to your actual production origins when "

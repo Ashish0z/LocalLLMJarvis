@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 
 from fastapi import FastAPI
@@ -42,18 +43,17 @@ class _SanitizingFilter(logging.Filter):
 
 
 def _configure_logging(log_level: str = "INFO") -> None:
-    sanitizing_filter = _SanitizingFilter()
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
     for handler in root_logger.handlers:
-        handler.addFilter(sanitizing_filter)
+        handler.addFilter(_SanitizingFilter())
     if not root_logger.handlers:
         handler = logging.StreamHandler()
-        handler.addFilter(sanitizing_filter)
+        handler.addFilter(_SanitizingFilter())
         root_logger.addHandler(handler)
 
 
-_configure_logging(get_settings().log_level)
+_configure_logging(os.getenv("LOG_LEVEL", "INFO"))
 
 settings = get_settings()
 
