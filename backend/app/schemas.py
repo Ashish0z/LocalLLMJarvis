@@ -168,3 +168,73 @@ class DocumentAskRead(BaseModel):
     answer: str
     document_id: str
     context_chunks: list[str]
+
+
+# ---------- Projects ----------
+
+class MilestoneCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=280)
+    description: str | None = None
+    sequence_order: int = Field(default=0, ge=0)
+    due_at: datetime | None = None
+
+
+class MilestoneUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=280)
+    description: str | None = None
+    sequence_order: int | None = Field(default=None, ge=0)
+    status: Literal["planned", "active", "blocked", "done"] | None = None
+    due_at: datetime | None = None
+
+
+class MilestoneRead(BaseModel):
+    id: str
+    project_id: str
+    title: str
+    description: str | None
+    sequence_order: int
+    status: str
+    due_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=280)
+    objective: str = Field(min_length=1)
+    constraints: str | None = None
+    deadline: datetime | None = None
+    milestones: list[MilestoneCreate] = []
+
+
+class ProjectUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=280)
+    objective: str | None = Field(default=None, min_length=1)
+    constraints: str | None = None
+    deadline: datetime | None = None
+    status: Literal["planned", "active", "blocked", "done"] | None = None
+
+
+class ProjectRead(BaseModel):
+    id: str
+    title: str
+    objective: str
+    constraints: str | None
+    deadline: datetime | None
+    status: str
+    replan_notes: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectDetailRead(ProjectRead):
+    milestones: list[MilestoneRead]
+
+
+class ProjectReplanCreate(BaseModel):
+    reason: str = Field(min_length=1)
+    updated_milestones: list[MilestoneCreate] | None = None

@@ -31,6 +31,7 @@ It focuses on what is actually available today across backend, Android, web, and
   - `/logs`
   - `/memory`
   - `/documents`
+  - `/projects`
 - CORS middleware enabled with configurable allowed origins.
 
 ## 3. Data Model and Persistence
@@ -51,6 +52,10 @@ Current persisted entities (SQLAlchemy models):
   - Filename, content type, full text, summary, source, timestamps.
 - `document_chunks`
   - Document reference, chunk index, chunk text, timestamp.
+- `projects`
+  - Title, objective, constraints, deadline, status (planned/active/blocked/done), replan notes, timestamps.
+- `milestones`
+  - Project reference, title, description, sequence order, status (planned/active/blocked/done), due date, timestamps.
 
 Database initialization is automatic on API startup (`create_all`).
 
@@ -188,6 +193,14 @@ The product direction includes the following differentiators, which are document
   - project objective capture
   - assistant-generated milestones, timeline, and task plan
   - dynamic replanning from progress changes
+- **Projects Engine** (implemented — see `/projects` API):
+  - `POST /projects` — create a project with objective, constraints, deadline, and sequenced milestones
+  - `GET /projects` — list projects, filterable by status
+  - `GET /projects/{id}` — retrieve project with full milestone plan
+  - `PATCH /projects/{id}` — update project fields or transition state (planned → active → blocked → done)
+  - `POST /projects/{id}/milestones` — add a milestone to a project
+  - `PATCH /projects/{id}/milestones/{ms_id}` — update or advance a milestone
+  - `POST /projects/{id}/replan` — record slippage reason and replace milestone plan; auto-unblocks project
 - Goals:
   - long-term goal setup with baseline interview
   - timeframe-based daily/weekly programs
