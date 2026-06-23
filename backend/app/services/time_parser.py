@@ -1,8 +1,11 @@
 import re
 from datetime import datetime, time, timedelta, timezone
+from types import MappingProxyType
 
-# Map lowercase weekday names to Python weekday numbers (Monday=0)
-WEEKDAY_NAMES: dict[str, int] = {
+# Map lowercase weekday names to Python weekday numbers (Monday=0).
+# MappingProxyType prevents accidental mutation, consistent with the frozenset
+# pattern used for _RECURRING_PHRASES below.
+WEEKDAY_NAMES: MappingProxyType = MappingProxyType({
     "monday": 0,
     "tuesday": 1,
     "wednesday": 2,
@@ -10,7 +13,7 @@ WEEKDAY_NAMES: dict[str, int] = {
     "friday": 4,
     "saturday": 5,
     "sunday": 6,
-}
+})
 
 # Recurring time phrases that indicate a repeating schedule
 _RECURRING_PHRASES: frozenset[str] = frozenset({

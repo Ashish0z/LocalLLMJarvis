@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Union
 
 import pytest
 
@@ -18,10 +17,7 @@ os.environ["JARVIS_API_KEY"] = "test-key"
 from app.main import app  # noqa: F401
 
 
-def pytest_sessionfinish(
-    session: pytest.Session,
-    exitstatus: Union[int, pytest.ExitCode],
-) -> None:
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """Clean up the shared test database at the end of the session."""
     if _TEST_DB.exists():
         _TEST_DB.unlink()
