@@ -6,6 +6,22 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000
 const DEFAULT_API_KEY = import.meta.env.VITE_API_KEY || "";
 const UNDO_DELAY_MS = 5000;
 
+/**
+ * Convert an ISO 8601 datetime string (possibly with timezone) to the
+ * "YYYY-MM-DDTHH:MM" format required by <input type="datetime-local">.
+ * The value is expressed in the user's local timezone.
+ */
+function toDatetimeLocal(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  );
+}
+
 /** Fetch JSON with structured error detail parsing from FastAPI responses. */
 async function fetchJSON(url, options = {}) {
   let res;
@@ -207,14 +223,16 @@ function App() {
   }
 
   function confirmDeleteDocument(id) {
-    const doc = documents.find((d) => d.id === id);
+    const idx = documents.findIndex((d) => d.id === id);
+    const doc = documents[idx];
+    // Compute remaining before any state updates to avoid stale-closure issues.
+    const remaining = documents.filter((d) => d.id !== id);
     setConfirmDeleteDocId(null);
-    setDocuments((prev) => prev.filter((d) => d.id !== id));
+    setDocuments(remaining);
     if (selectedDocumentId === id) {
-      const remaining = documents.filter((d) => d.id !== id);
       setSelectedDocumentId(remaining.length > 0 ? remaining[0].id : "");
     }
-    setUndoDoc({ id, doc });
+    setUndoDoc({ id, doc, idx });
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(async () => {
       setUndoDoc(null);
@@ -233,7 +251,13 @@ function App() {
   function undoDeleteDocument() {
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     if (undoDoc?.doc) {
-      setDocuments((prev) => [undoDoc.doc, ...prev]);
+      setDocuments((prev) => {
+        const next = [...prev];
+        // Restore to the original position; clamp in case other items were added/removed.
+        const insertAt = Math.min(undoDoc.idx, next.length);
+        next.splice(insertAt, 0, undoDoc.doc);
+        return next;
+      });
     }
     setUndoDoc(null);
   }
@@ -434,7 +458,7 @@ function App() {
                           id: task.id,
                           title: task.title,
                           notes: task.notes ?? "",
-                          due_at: task.due_at ? task.due_at.slice(0, 16) : "",
+                          due_at: toDatetimeLocal(task.due_at),
                         })
                       }
                     >
@@ -492,9 +516,7 @@ function App() {
                         setEditingReminder({
                           id: reminder.id,
                           title: reminder.title,
-                          remind_at: reminder.remind_at
-                            ? reminder.remind_at.slice(0, 16)
-                            : "",
+                          remind_at: toDatetimeLocal(reminder.remind_at),
                           intensity: reminder.intensity,
                         })
                       }
