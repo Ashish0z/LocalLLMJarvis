@@ -20,11 +20,14 @@ HEADERS = {"X-API-Key": "test-key"}
 @pytest.fixture()
 def fresh_db():
     """Delete all tasks, reminders, and health-logs before a test that requires clean state."""
-    with SessionLocal() as db:
+    db = SessionLocal()
+    try:
         db.execute(delete(models.Task))
         db.execute(delete(models.Reminder))
         db.execute(delete(models.HealthLog))
         db.commit()
+    finally:
+        db.close()
     yield
 
 
@@ -241,7 +244,7 @@ class TestClarificationFlow:
 # ── assistant: recurring reminder is flagged ─────────────────────────────────
 
 class TestRecurringReminder:
-    def test_recurring_reminder_sets_recurrence_field(self) -> None:
+    def test_recurring_reminder_sets_recurrence_field(self, fresh_db: None) -> None:
         with TestClient(app) as client:
             _ = client.post(
                 "/assistant/message",

@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import models
@@ -103,14 +103,9 @@ class AssistantService:
         if not title:
             title = text.strip()
 
-        if self._is_duplicate_task(db, title):
-            existing = db.scalars(
-                select(models.Task).where(
-                    models.Task.status == "pending",
-                    models.Task.title == title,
-                )
-            ).first()
-            return existing  # return the existing record without re-creating
+        existing = self._find_duplicate_task(db, title)
+        if existing is not None:
+            return existing  # return existing record without re-creating
 
         due_at = parse_when(text)
         priority_score, priority_reason = score_task(title, due_at)
@@ -138,14 +133,9 @@ class AssistantService:
 
         remind_at = parse_when(text)
 
-        if self._is_duplicate_reminder(db, title, remind_at):
-            existing = db.scalars(
-                select(models.Reminder).where(
-                    models.Reminder.status == "active",
-                    models.Reminder.title == title,
-                )
-            ).first()
-            return existing  # return the existing record without re-creating
+        existing = self._find_duplicate_reminder(db, title)
+        if existing is not None:
+            return existing  # return existing record without re-creating
 
         reminder = models.Reminder(
             title=title,
@@ -227,19 +217,23 @@ class AssistantService:
 
     # ── idempotency helpers ───────────────────────────────────────────────────
 
-    def _is_duplicate_task(self, db: Session, title: str) -> bool:
-        """Return True if a pending task with the same normalised title already exists."""
+    def _find_duplicate_task(self, db: Session, title: str) -> models.Task | None:
+        """Return an existing pending task with the same normalised title, or None."""
         normalised = title.lower().strip()
-        existing = db.scalars(
-            select(models.Task).where(models.Task.status == "pending")
-        ).all()
-        return any(t.title.lower().strip() == normalised for t in existing)
+        return db.scalars(
+            select(models.Task).where(
+                models.Task.status == "pending",
+                func.lower(func.trim(models.Task.title)) == normalised,
+            )
+        ).first()
 
-    def _is_duplicate_reminder(self, db: Session, title: str, remind_at: datetime | None) -> bool:
-        """Return True if an active reminder with the same normalised title already exists."""
+    def _find_duplicate_reminder(self, db: Session, title: str) -> models.Reminder | None:
+        """Return an existing active reminder with the same normalised title, or None."""
         normalised = title.lower().strip()
-        existing = db.scalars(
-            select(models.Reminder).where(models.Reminder.status == "active")
-        ).all()
-        return any(r.title.lower().strip() == normalised for r in existing)
+        return db.scalars(
+            select(models.Reminder).where(
+                models.Reminder.status == "active",
+                func.lower(func.trim(models.Reminder.title)) == normalised,
+            )
+        ).first()
 

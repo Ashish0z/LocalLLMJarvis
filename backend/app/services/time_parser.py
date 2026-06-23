@@ -31,12 +31,10 @@ _EVERY_WEEKDAY_RE = re.compile(
     r"\bevery\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b"
 )
 
-# Clock pattern: require am/pm marker OR colon notation to avoid false matches
-# on bare ordinal/quantity numbers like "3 items" or "in 2 days".
+# Clock regex: require am/pm marker OR colon notation (HH:MM) to avoid false
+# matches on bare ordinal/quantity numbers like "3 items" or "in 2 days".
 _CLOCK_RE = re.compile(
-    r"\b(\d{1,2}):(\d{2})\s*(am|pm)?\b"   # HH:MM [am/pm]
-    r"|"
-    r"\b(\d{1,2})\s*(am|pm)\b",            # H am/pm (am/pm required)
+    r"\b(\d{1,2}):(\d{2})\s*(am|pm)?\b|\b(\d{1,2})\s*(am|pm)\b",
     re.IGNORECASE,
 )
 
@@ -50,6 +48,25 @@ def is_recurring(text: str) -> bool:
 
 
 def parse_when(text: str) -> datetime | None:
+    """Parse a natural-language time expression and return a UTC datetime.
+
+    Relative date keywords:
+        tomorrow, next week, weekday names (Monday–Sunday, next Monday, …)
+
+    Day-part keywords map to fixed hours (UTC):
+        morning → 09:00, after lunch / afternoon → 14:00, evening → 18:00,
+        tonight / night → 20:00
+
+    Clock expressions require an am/pm suffix or colon notation (HH:MM) to
+    prevent false matches on bare numbers.
+
+    Same-day weekday rule: when the named weekday matches today's weekday, the
+    returned date is always the *next* occurrence (7 days ahead).  This is
+    intentional — if the time has already passed today the parser cannot know,
+    so it defaults to the future.
+
+    Returns None when no time hint is found in the text.
+    """
     lowered = text.lower()
     now = datetime.now(timezone.utc)
     target_date = now.date()
@@ -103,9 +120,10 @@ def parse_when(text: str) -> datetime | None:
             hour = int(clock_match.group(4))
             minute = 0
             meridiem = clock_match.group(5)
-        if meridiem and meridiem.lower() == "pm" and hour < 12:
+        meridiem_lc = meridiem.lower() if meridiem else None
+        if meridiem_lc == "pm" and hour < 12:
             hour += 12
-        if meridiem and meridiem.lower() == "am" and hour == 12:
+        if meridiem_lc == "am" and hour == 12:
             hour = 0
         if 0 <= hour <= 23 and 0 <= minute <= 59:
             target_time = time(hour=hour, minute=minute)
