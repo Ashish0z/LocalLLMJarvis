@@ -37,6 +37,7 @@ class ReminderCreate(BaseModel):
     title: str = Field(min_length=1, max_length=280)
     remind_at: datetime | None = None
     intensity: Literal["gentle", "standard", "persistent"] = "standard"
+    recurrence: str | None = None
     source: str = "manual"
 
 
@@ -45,6 +46,7 @@ class ReminderUpdate(BaseModel):
     remind_at: datetime | None = None
     status: Literal["active", "done", "snoozed", "cancelled"] | None = None
     intensity: Literal["gentle", "standard", "persistent"] | None = None
+    recurrence: str | None = None
 
 
 class ReminderRead(BaseModel):
@@ -53,6 +55,7 @@ class ReminderRead(BaseModel):
     remind_at: datetime | None
     status: str
     intensity: str
+    recurrence: str | None
     source: str
     created_at: datetime
     updated_at: datetime
