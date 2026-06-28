@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
@@ -15,6 +16,8 @@ from app.services.documents import (
     serialize_embedding,
     summarize_text,
 )
+from app.limiter import limiter
+from app.services.documents import chunk_text, decode_document, rank_chunks, summarize_text
 from app.services.ollama import OllamaClient
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -89,8 +92,19 @@ async def upload_document(
 
 
 @router.get("", response_model=list[schemas.DocumentRead])
-def list_documents(db: Session = Depends(get_db)) -> list[models.Document]:
-    return list(db.scalars(select(models.Document).order_by(models.Document.created_at.desc())))
+def list_documents(
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[models.Document]:
+    return list(
+        db.scalars(
+            select(models.Document)
+            .order_by(models.Document.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+    )
 
 
 @router.get("/{document_id}", response_model=schemas.DocumentDetailRead)
@@ -114,8 +128,12 @@ def delete_document(document_id: str, db: Session = Depends(get_db)) -> None:
 
 
 @router.post("/{document_id}/ask", response_model=schemas.DocumentAskRead)
+@limiter.limit("20/minute")
 async def ask_document(
-    document_id: str, payload: schemas.DocumentAskCreate, db: Session = Depends(get_db)
+    request: Request,  # required by slowapi rate limiting
+    document_id: str,
+    payload: schemas.DocumentAskCreate,
+    db: Session = Depends(get_db),
 ) -> schemas.DocumentAskRead:
     document = db.get(models.Document, document_id)
     if not document:
