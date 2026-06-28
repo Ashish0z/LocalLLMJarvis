@@ -34,6 +34,7 @@ class Reminder(Base):
     remind_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     status: Mapped[str] = mapped_column(String(32), default="active", index=True)
     intensity: Mapped[str] = mapped_column(String(32), default="standard")
+    recurrence: Mapped[str | None] = mapped_column(String(32), default=None)
     source: Mapped[str] = mapped_column(String(32), default="manual")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)

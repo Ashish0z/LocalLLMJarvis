@@ -1,12 +1,23 @@
 import re
 from datetime import datetime, timezone
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import models
 from app.services.ollama import OllamaClient
 from app.services.prioritization import score_task
-from app.services.time_parser import parse_when
+from app.services.time_parser import is_recurring, parse_when
+
+# ── intent signal sets ────────────────────────────────────────────────────────
+_TASK_SIGNALS = frozenset(["add task", "add a task", "todo", "to-do", "to do"])
+_REMINDER_SIGNALS = frozenset(["remind me", "reminder"])
+_NUTRITION_VERBS = frozenset(["ate", "had", "having", "eating", "finished", "consumed"])
+_NUTRITION_MARKERS = frozenset(["ate", "breakfast", "snack", "meal"])
+_NUTRITION_MEAL_WORDS = frozenset(["lunch", "dinner"])
+
+# Words that indicate the text is carrying important/urgent content
+_URGENCY_WORDS = frozenset(["urgent", "important", "critical"])
 
 
 class AssistantService:
@@ -18,6 +29,13 @@ class AssistantService:
         actions: list[dict] = []
 
         db.add(models.ConversationMessage(role="user", content=cleaned))
+
+        clarification = self._detect_ambiguous_intent(cleaned)
+        if clarification:
+            response = clarification
+            db.add(models.ConversationMessage(role="assistant", content=response))
+            db.commit()
+            return {"response": response, "actions": actions}
 
         task = self._maybe_create_task(db, cleaned, source)
         if task:
@@ -44,9 +62,35 @@ class AssistantService:
         db.commit()
         return {"response": response, "actions": actions}
 
+    # ── intent helpers ────────────────────────────────────────────────────────
+
+    def _detect_ambiguous_intent(self, text: str) -> str | None:
+        """Return a clarification question when the intent is ambiguous, else None."""
+        lowered = text.lower()
+
+        has_task = any(sig in lowered for sig in _TASK_SIGNALS)
+        has_reminder = any(sig in lowered for sig in _REMINDER_SIGNALS)
+
+        # Both task and reminder signals → ask which one is intended
+        if has_task and has_reminder:
+            return (
+                "Did you want to add a task or set a reminder? "
+                "Please rephrase as one of: 'Add task …' or 'Remind me to …'."
+            )
+
+        # Reminder signal present but no subject after stripping boilerplate
+        if has_reminder:
+            subject = re.sub(r"(please\s+)?(set\s+a\s+)?reminder\s*(to|for)?\s*", "", lowered, flags=re.IGNORECASE)
+            subject = re.sub(r"(please\s+)?remind me\s*(to|that|about)?\s*", "", subject, flags=re.IGNORECASE)
+            subject = subject.strip(" .")
+            if not subject:
+                return "What would you like to be reminded about?"
+
+        return None
+
     def _maybe_create_task(self, db: Session, text: str, source: str) -> models.Task | None:
         lowered = text.lower()
-        if not any(marker in lowered for marker in ["add task", "add a task", "todo", "to-do", "to do"]):
+        if not any(marker in lowered for marker in _TASK_SIGNALS):
             return None
 
         title = re.sub(
@@ -58,6 +102,10 @@ class AssistantService:
         title = re.sub(r"^(to|for)\s+", "", title, flags=re.IGNORECASE).strip()
         if not title:
             title = text.strip()
+
+        existing = self._find_duplicate_task(db, title)
+        if existing is not None:
+            return existing  # return existing record without re-creating
 
         due_at = parse_when(text)
         priority_score, priority_reason = score_task(title, due_at)
@@ -74,7 +122,7 @@ class AssistantService:
 
     def _maybe_create_reminder(self, db: Session, text: str, source: str) -> models.Reminder | None:
         lowered = text.lower()
-        if "remind me" not in lowered and "reminder" not in lowered:
+        if not any(sig in lowered for sig in _REMINDER_SIGNALS):
             return None
 
         title = re.sub(r"^\s*(please\s+)?(set\s+a\s+)?reminder\s*(to|for)?\s*", "", text, flags=re.IGNORECASE)
@@ -83,10 +131,17 @@ class AssistantService:
         if not title:
             title = text.strip()
 
+        remind_at = parse_when(text)
+
+        existing = self._find_duplicate_reminder(db, title)
+        if existing is not None:
+            return existing  # return existing record without re-creating
+
         reminder = models.Reminder(
             title=title,
-            remind_at=parse_when(text),
-            intensity="persistent" if any(word in lowered for word in ["urgent", "important", "critical"]) else "standard",
+            remind_at=remind_at,
+            recurrence="recurring" if is_recurring(text) else None,
+            intensity="persistent" if any(word in lowered for word in _URGENCY_WORDS) else "standard",
             source=source,
         )
         db.add(reminder)
@@ -95,6 +150,13 @@ class AssistantService:
 
     def _maybe_create_health_log(self, db: Session, text: str, source: str) -> models.HealthLog | None:
         lowered = text.lower()
+
+        # Skip health-log extraction when the message is primarily a reminder or task command
+        # to prevent false positives (e.g., "remind me about lunch" should not log a meal).
+        if any(sig in lowered for sig in _REMINDER_SIGNALS):
+            return None
+        if any(sig in lowered for sig in _TASK_SIGNALS):
+            return None
 
         if "water" in lowered and any(word in lowered for word in ["drank", "drink", "log", "had"]):
             amount = self._extract_amount(text)
@@ -110,8 +172,14 @@ class AssistantService:
             db.flush()
             return log
 
-        nutrition_markers = ["ate", "breakfast", "lunch", "dinner", "snack", "meal"]
-        if any(marker in lowered for marker in nutrition_markers):
+        # General nutrition: require a consumption verb alongside meal-specific words
+        # to avoid triggering on time-of-day phrases like "after lunch" in a reminder.
+        has_nutrition_marker = any(marker in lowered for marker in _NUTRITION_MARKERS)
+        has_meal_with_verb = (
+            any(word in lowered for word in _NUTRITION_MEAL_WORDS)
+            and any(verb in lowered for verb in _NUTRITION_VERBS)
+        )
+        if has_nutrition_marker or has_meal_with_verb:
             log = models.HealthLog(
                 kind="nutrition",
                 value=text.strip(),
@@ -146,4 +214,26 @@ class AssistantService:
             elif action["type"] == "nutrition_logged":
                 parts.append("logged meal")
         return "Done - " + "; ".join(parts) + "."
+
+    # ── idempotency helpers ───────────────────────────────────────────────────
+
+    def _find_duplicate_task(self, db: Session, title: str) -> models.Task | None:
+        """Return an existing pending task with the same normalised title, or None."""
+        normalised = title.lower().strip()
+        return db.scalars(
+            select(models.Task).where(
+                models.Task.status == "pending",
+                func.lower(func.trim(models.Task.title)) == normalised,
+            )
+        ).first()
+
+    def _find_duplicate_reminder(self, db: Session, title: str) -> models.Reminder | None:
+        """Return an existing active reminder with the same normalised title, or None."""
+        normalised = title.lower().strip()
+        return db.scalars(
+            select(models.Reminder).where(
+                models.Reminder.status == "active",
+                func.lower(func.trim(models.Reminder.title)) == normalised,
+            )
+        ).first()
 
