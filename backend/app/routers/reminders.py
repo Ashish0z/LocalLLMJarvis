@@ -27,9 +27,10 @@ def create_reminder(payload: schemas.ReminderCreate, db: Session = Depends(get_d
 def list_reminders(
     status: str | None = Query(default="active"),
     limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> list[models.Reminder]:
-    stmt = select(models.Reminder).order_by(models.Reminder.remind_at.asc().nullslast(), models.Reminder.created_at.desc()).limit(limit)
+    stmt = select(models.Reminder).order_by(models.Reminder.remind_at.asc().nullslast(), models.Reminder.created_at.desc()).limit(limit).offset(offset)
     if status:
         stmt = stmt.where(models.Reminder.status == status)
     return list(db.scalars(stmt))
