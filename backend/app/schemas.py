@@ -37,6 +37,7 @@ class ReminderCreate(BaseModel):
     title: str = Field(min_length=1, max_length=280)
     remind_at: datetime | None = None
     intensity: Literal["gentle", "standard", "persistent"] = "standard"
+    recurrence: str | None = None
     source: str = "manual"
 
 
@@ -45,6 +46,7 @@ class ReminderUpdate(BaseModel):
     remind_at: datetime | None = None
     status: Literal["active", "done", "snoozed", "cancelled"] | None = None
     intensity: Literal["gentle", "standard", "persistent"] | None = None
+    recurrence: str | None = None
 
 
 class ReminderRead(BaseModel):
@@ -53,6 +55,7 @@ class ReminderRead(BaseModel):
     remind_at: datetime | None
     status: str
     intensity: str
+    recurrence: str | None
     source: str
     created_at: datetime
     updated_at: datetime
@@ -195,6 +198,38 @@ class MilestoneRead(BaseModel):
     sequence_order: int
     status: str
     due_at: datetime | None
+class HabitCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=280)
+    mode: Literal["build", "remove"] = "build"
+    description: str | None = None
+    cue: str | None = None
+    frequency: Literal["daily", "weekly"] = "daily"
+    coaching_tone: Literal["supportive", "neutral", "strict"] = "supportive"
+    source: str = "manual"
+
+
+class HabitUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=280)
+    description: str | None = None
+    cue: str | None = None
+    frequency: Literal["daily", "weekly"] | None = None
+    coaching_tone: Literal["supportive", "neutral", "strict"] | None = None
+    status: Literal["active", "paused", "archived"] | None = None
+
+
+class HabitRead(BaseModel):
+    id: str
+    title: str
+    mode: str
+    description: str | None
+    cue: str | None
+    frequency: str
+    coaching_tone: str
+    status: str
+    current_streak: int
+    longest_streak: int
+    relapse_count: int
+    source: str
     created_at: datetime
     updated_at: datetime
 
@@ -225,6 +260,47 @@ class ProjectRead(BaseModel):
     deadline: datetime | None
     status: str
     replan_notes: str | None
+class HabitCheckInCreate(BaseModel):
+    outcome: Literal["complete", "skip", "relapse"]
+    notes: str | None = None
+    checked_at: datetime | None = None
+
+
+class HabitCheckInRead(BaseModel):
+    id: str
+    habit_id: str
+    outcome: str
+    notes: str | None
+    checked_at: datetime
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GoalCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=280)
+    description: str | None = None
+    target_date: datetime | None = None
+    source: str = "manual"
+
+
+class GoalUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=280)
+    description: str | None = None
+    target_date: datetime | None = None
+    status: Literal["active", "completed", "cancelled", "paused"] | None = None
+    current_phase: str | None = None
+
+
+class GoalRead(BaseModel):
+    id: str
+    title: str
+    description: str | None
+    target_date: datetime | None
+    status: str
+    current_phase: str | None
+    baseline_data: str | None
+    source: str
     created_at: datetime
     updated_at: datetime
 
@@ -238,3 +314,24 @@ class ProjectDetailRead(ProjectRead):
 class ProjectReplanCreate(BaseModel):
     reason: str = Field(min_length=1)
     updated_milestones: list[MilestoneCreate] | None = None
+class GoalInterviewCreate(BaseModel):
+    current_level: str | None = None
+    available_time: str | None = None
+    constraints: str | None = None
+    motivation_style: str | None = None
+    extra_notes: str | None = None
+
+
+class GoalCheckInCreate(BaseModel):
+    notes: str | None = None
+    adherence_rating: int | None = Field(default=None, ge=1, le=5)
+
+
+class GoalCheckInRead(BaseModel):
+    id: str
+    goal_id: str
+    notes: str | None
+    adherence_rating: int | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

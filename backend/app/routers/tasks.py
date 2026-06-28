@@ -30,9 +30,10 @@ def create_task(payload: schemas.TaskCreate, db: Session = Depends(get_db)) -> m
 def list_tasks(
     status: str | None = Query(default="pending"),
     limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> list[models.Task]:
-    stmt = select(models.Task).order_by(models.Task.priority_score.desc(), models.Task.created_at.desc()).limit(limit)
+    stmt = select(models.Task).order_by(models.Task.priority_score.desc(), models.Task.created_at.desc()).limit(limit).offset(offset)
     if status:
         stmt = stmt.where(models.Task.status == status)
     return list(db.scalars(stmt))

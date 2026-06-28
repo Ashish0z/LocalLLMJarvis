@@ -62,9 +62,10 @@ def create_nutrition_log(
 def list_logs(
     kind: str | None = None,
     limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> list[models.HealthLog]:
-    stmt = select(models.HealthLog).order_by(models.HealthLog.logged_at.desc()).limit(limit)
+    stmt = select(models.HealthLog).order_by(models.HealthLog.logged_at.desc()).limit(limit).offset(offset)
     if kind:
         stmt = stmt.where(models.HealthLog.kind == kind)
     return list(db.scalars(stmt))
