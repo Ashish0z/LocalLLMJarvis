@@ -309,7 +309,68 @@ Restart after code changes:
 docker compose up --build
 ```
 
-## 11. Next Implementation Steps
+## 11. Secure Transport
+
+All traffic between clients and the backend should be encrypted. Two supported approaches are described below.
+
+### Option A — Tailscale (recommended for personal use)
+
+Tailscale creates a private WireGuard mesh between your devices. All traffic inside the tailnet is encrypted end-to-end and requires no certificate management.
+
+1. Install Tailscale on the server machine and sign in.
+2. Install Tailscale on every client device (Android phone, laptop, etc.).
+3. Add each device to the same tailnet in the Tailscale admin console.
+4. Set the Android/web API URL to the server's Tailscale address:
+
+```text
+http://100.x.y.z:8000
+http://your-machine-name:8000
+```
+
+5. Keep host firewall rules in place so port 8000 is only reachable from the Tailscale interface, not the public internet:
+
+```powershell
+# Windows example: allow 8000 only from Tailscale subnet 100.64.0.0/10
+New-NetFirewallRule -DisplayName "Jarvis API Tailscale" -Direction Inbound -Protocol TCP -LocalPort 8000 -RemoteAddress "100.64.0.0/10" -Action Allow
+```
+
+### Option B — Reverse proxy with TLS (HTTPS)
+
+Place a TLS-terminating reverse proxy in front of the API container. Two common choices are shown below.
+
+**Caddy** (automatic certificates via Let's Encrypt):
+
+```text
+jarvis.example.com {
+    reverse_proxy localhost:8000
+}
+```
+
+Run with `caddy run --config Caddyfile`.
+
+**nginx** (with certificates from Certbot):
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name jarvis.example.com;
+    ssl_certificate     /etc/letsencrypt/live/jarvis.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/jarvis.example.com/privkey.pem;
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+When using a reverse proxy, update `API_CORS_ORIGINS` in `.env` to your HTTPS domain and set `APP_ENV=production` so the backend enforces the stricter security rules.
+
+### Logging and sensitive data
+
+The backend applies a sanitizing log filter at startup. Log lines containing `X-API-Key`, `Authorization`, or `JARVIS_API_KEY` values are automatically redacted before they reach any log sink. No other PII filtering is applied at this time; avoid logging user message content at `INFO` level or above.
+
+## 12. Next Implementation Steps
 
 Recommended next work:
 

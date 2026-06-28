@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -13,6 +13,9 @@ def utc_now() -> datetime:
 
 class Task(Base):
     __tablename__ = "tasks"
+    __table_args__ = (
+        Index("ix_tasks_status_priority_score", "status", "priority_score"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title: Mapped[str] = mapped_column(String(280), nullable=False)
@@ -28,12 +31,16 @@ class Task(Base):
 
 class Reminder(Base):
     __tablename__ = "reminders"
+    __table_args__ = (
+        Index("ix_reminders_status_remind_at", "status", "remind_at"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title: Mapped[str] = mapped_column(String(280), nullable=False)
     remind_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     status: Mapped[str] = mapped_column(String(32), default="active", index=True)
     intensity: Mapped[str] = mapped_column(String(32), default="standard")
+    recurrence: Mapped[str | None] = mapped_column(String(32), default=None)
     source: Mapped[str] = mapped_column(String(32), default="manual")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
@@ -69,7 +76,7 @@ class ConversationMessage(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     role: Mapped[str] = mapped_column(String(32), index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
 
 
 class Document(Base):
@@ -80,8 +87,9 @@ class Document(Base):
     content_type: Mapped[str | None] = mapped_column(String(160))
     text: Mapped[str] = mapped_column(Text, nullable=False)
     summary: Mapped[str | None] = mapped_column(Text)
+    privacy_label: Mapped[str] = mapped_column(String(32), default="public", index=True)
     source: Mapped[str] = mapped_column(String(32), default="upload")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
@@ -92,4 +100,82 @@ class DocumentChunk(Base):
     document_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    embedding: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class Project(Base):
+    __tablename__ = "projects"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    title: Mapped[str] = mapped_column(String(280), nullable=False)
+    objective: Mapped[str] = mapped_column(Text, nullable=False)
+    constraints: Mapped[str | None] = mapped_column(Text)
+    deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="planned", index=True)
+    replan_notes: Mapped[str | None] = mapped_column(Text)
+class Habit(Base):
+    __tablename__ = "habits"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    title: Mapped[str] = mapped_column(String(280), nullable=False)
+    mode: Mapped[str] = mapped_column(String(16), default="build")
+    description: Mapped[str | None] = mapped_column(Text)
+    cue: Mapped[str | None] = mapped_column(Text)
+    frequency: Mapped[str] = mapped_column(String(32), default="daily")
+    coaching_tone: Mapped[str] = mapped_column(String(32), default="supportive")
+    status: Mapped[str] = mapped_column(String(32), default="active", index=True)
+    current_streak: Mapped[int] = mapped_column(Integer, default=0)
+    longest_streak: Mapped[int] = mapped_column(Integer, default=0)
+    relapse_count: Mapped[int] = mapped_column(Integer, default=0)
+    source: Mapped[str] = mapped_column(String(32), default="manual")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class Milestone(Base):
+    __tablename__ = "milestones"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(280), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    sequence_order: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    status: Mapped[str] = mapped_column(String(32), default="planned", index=True)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+class HabitCheckIn(Base):
+    __tablename__ = "habit_checkins"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    habit_id: Mapped[str] = mapped_column(String(36), ForeignKey("habits.id", ondelete="CASCADE"), index=True, nullable=False)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text)
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class Goal(Base):
+    __tablename__ = "goals"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    title: Mapped[str] = mapped_column(String(280), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    target_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="active", index=True)
+    current_phase: Mapped[str | None] = mapped_column(String(64))
+    baseline_data: Mapped[str | None] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(32), default="manual")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class GoalCheckIn(Base):
+    __tablename__ = "goal_checkins"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    goal_id: Mapped[str] = mapped_column(String(36), ForeignKey("goals.id", ondelete="CASCADE"), index=True, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text)
+    adherence_rating: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)

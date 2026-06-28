@@ -25,9 +25,10 @@ def create_memory(payload: schemas.MemoryCreate, db: Session = Depends(get_db)) 
 def list_memory(
     active_only: bool = True,
     limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> list[models.MemoryItem]:
-    stmt = select(models.MemoryItem).order_by(models.MemoryItem.updated_at.desc()).limit(limit)
+    stmt = select(models.MemoryItem).order_by(models.MemoryItem.updated_at.desc()).limit(limit).offset(offset)
     if active_only:
         stmt = stmt.where(models.MemoryItem.is_active.is_(True))
     return list(db.scalars(stmt))
