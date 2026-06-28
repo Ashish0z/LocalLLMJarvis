@@ -75,7 +75,7 @@ This checklist covers what remains before this project should be considered a re
 
 ## 2.0 Standout Product Epics
 
-- [ ] Projects engine:
+- [x] Projects engine:
   - project create flow with objective, constraints, deadline, and success criteria
   - project planning API that generates milestones, timeline, and sequenced tasks
   - project progress state model (planned/active/blocked/done)

@@ -12,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from app.auth import require_api_key
 from app.config import get_settings
 from app.database import init_db
-from app.routers import assistant, documents, goals, habits, logs, memory, reminders, tasks, today
+from app.routers import assistant, documents, goals, habits, logs, memory, reminders, tasks, today, projects
 from app.limiter import limiter
 
 
@@ -140,5 +140,6 @@ app.include_router(reminders.router, dependencies=protected_dependencies)
 app.include_router(logs.router, dependencies=protected_dependencies)
 app.include_router(memory.router, dependencies=protected_dependencies)
 app.include_router(documents.router, dependencies=protected_dependencies)
+app.include_router(projects.router, dependencies=protected_dependencies)
 app.include_router(habits.router, dependencies=protected_dependencies)
 app.include_router(goals.router, dependencies=protected_dependencies)
