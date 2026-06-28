@@ -205,6 +205,10 @@ small {
   color: #6a756d;
 }
 
+.entity-section {
+  margin-top: 20px;
+}
+
 .documents {
   margin-top: 20px;
 }
@@ -214,6 +218,7 @@ small {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .upload {
@@ -243,6 +248,179 @@ small {
   color: #6a756d;
 }
 
+/* Action rows (tasks, reminders, documents) */
+.action-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.row-title {
+  flex: 1 1 0;
+  word-break: break-word;
+}
+
+.row-info {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.row-notes {
+  font-style: italic;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+/* Small action buttons */
+.btn-sm {
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 0.85rem;
+  color: white;
+  background: #2f6b45;
+  cursor: pointer;
+  justify-self: auto;
+}
+
+.btn-sm:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.btn-secondary {
+  color: #18211d;
+  background: #e4ebe5;
+}
+
+.btn-danger {
+  background: #b83232;
+}
+
+/* Inline edit form */
+.inline-edit {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.inline-edit input,
+.inline-edit select {
+  width: 100%;
+  border: 1px solid #cbd8ce;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #18211d;
+  background: #fbfcfa;
+  font: inherit;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Document list items */
+.doc-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.doc-info {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.confirm-delete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 0;
+  color: #7a2a1a;
+}
+
+/* Error banner with dismiss */
+.error {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: #7a2a1a;
+  background: #ffede8;
+}
+
+.error-dismiss {
+  flex: 0 0 auto;
+  color: #7a2a1a;
+  font-size: 1rem;
+}
+
+/* Undo banner */
+.undo-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  color: #254331;
+  background: #d2eed8;
+}
+
+.undo-action {
+  color: #1a5030;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* Context snippets for document Q&A */
+.context-snippets {
+  margin-top: 10px;
+}
+
+.context-toggle {
+  font-size: 0.85rem;
+  color: #4f6b59;
+  text-decoration: underline;
+}
+
+.context-list {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+  list-style: decimal;
+}
+
+.context-chunk {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid #cbd8ce;
+  background: #f5f7f2;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 760px) {
   .hero,
   .grid,
@@ -257,6 +435,22 @@ small {
   }
 
   .panel + .panel {
+    margin-top: 16px;
+  }
+
+  /* Override the default 20px margin with a tighter 16px spacing on narrow screens. */
+  .entity-section,
+  .documents {
+    margin-top: 16px;
+  }
+
+  .row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .document-grid > ul,
+  .document-grid > form {
     margin-top: 16px;
   }
 }
